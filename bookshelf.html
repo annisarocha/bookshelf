@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeruk Bookshelf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Put your font files in a "fonts" folder next to this file */
+@font-face{font-family:'Modern Prestige';src:url("fonts/Modern Prestige DEMO.otf") format("opentype");font-display:swap}
+@font-face{font-family:'Monimer';src:url("fonts/MonimerSerif_PERSONAL_USE_ONLY.otf") format("opentype");font-display:swap}
+@font-face{font-family:'Milesdane';src:url("fonts/Milesdane Trial.otf") format("opentype");font-weight:100 900;font-display:swap}
+@font-face{font-family:'Eternalo';src:url("fonts/Eternalo.ttf") format("opentype");font-weight:100 900;font-display:swap}
+
+:root{
+  --kraft:#efd9a7; --paper:#fffaf0; --cream:#fff4b8; --ink:#552a0b; --gold:#fa9147; --red:#cd5534; --tape:#fa914788;
+  --display:'Modern Prestige',Georgia,serif; --sans:'Poppins',system-ui,sans-serif; --book:'Eternalo',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--kraft);color:var(--ink);font-family:var(--sans);line-height:1.5}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+
+/* Frozen top */
+.top{position:sticky;top:0;z-index:5;background:rgba(205,85,52,.97);border-bottom:1px solid #ffffff1a;padding:10px 16px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.bar button,.bar a{background:transparent;color:var(--cream);border:1px solid #ffffff59;border-radius:999px;padding:6px 14px;text-decoration:none;font-size:.95rem}
+.bar button[aria-pressed="true"]{background:var(--cream);color:var(--ink);border-color:var(--cream)}
+.bar .spin{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:700}
+
+/* Frozen bottom */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:5;background:rgba(205,85,52,.98);border-top:1px solid #ffffff1a;padding:10px 0 calc(8px + env(safe-area-inset-bottom,0px))}
+.row{display:flex;align-items:center;gap:10px;padding:0 16px 6px;max-width:1100px;margin:0 auto;color:var(--cream)}
+.row b{flex:none;width:3.6rem;font-size:.95rem}
+.chips{display:flex;gap:8px;overflow-x:auto;flex:1;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;white-space:normal;background:transparent;color:var(--cream);border:1px solid #ffffff59;border-radius:999px;padding:5px 14px}
+.chips button:hover{border-color:var(--cream)}
+.chips button[aria-pressed="true"]{background:var(--cream);color:var(--ink);border-color:var(--cream);font-weight:700}
+
+#count{max-width:1100px;margin:18px auto 0;padding:0 24px;text-align:center}
+main{max-width:1100px;margin:0 auto;padding:0 16px 170px}
+h2.genre{font-family:var(--display);font-weight:400;font-size:2rem;margin:30px 0 0;text-align:center}
+
+/* One stack, same width, thickness follows page count.
+   Spines use min-height, so a long title wraps onto extra lines and the spine grows to fit. */
+.pile{width:min(360px,88vw);margin:28px auto 0;display:flex;flex-direction:column;gap:2px}
+.book{display:flex;align-items:center;gap:12px;flex:none;width:100%;border:0;border-radius:4px;color:#fff;font-family:var(--book);text-align:left;padding:10px 20px 10px 16px;white-space:normal;line-height:1.15;box-shadow:inset 6px 0 0 #00000030,inset -7px 0 0 #f3ead2;transform:translateX(var(--x,0px)) rotate(var(--r,0deg));transition:transform .15s}
+.book:hover,.book:focus-visible{transform:translateX(calc(var(--x,0px) + 8px)) rotate(0deg)}
+.book .t{flex:1 1 0;min-width:0;text-align:left;overflow-wrap:anywhere;hyphens:auto;text-wrap:pretty}
+.book .a{flex:0 1 auto;max-width:40%;margin-left:auto;text-align:right;overflow-wrap:anywhere;font-family:var(--sans);font-size:11px;line-height:1.25;opacity:.85}
+.book.tbr{opacity:.55}
+.empty{text-align:center;padding:60px 0}
+
+/* Book page */
+#detail{display:none;min-height:100svh;padding:28px 20px 60px}
+body.reading #detail{display:block}
+body.reading .top,body.reading .bottom,body.reading #count,body.reading main{display:none}
+.back{display:inline-block;color:var(--ink);margin:0 auto 28px;max-width:900px}
+.sheet{max-width:900px;margin:0 auto;display:grid;gap:44px;align-items:start}
+@media(min-width:760px){.sheet{grid-template-columns:300px 1fr;gap:64px}}
+.cover{position:relative;width:min(280px,72vw);aspect-ratio:2/3;justify-self:center;border-radius:3px 8px 8px 3px;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:28px;font-family:var(--book);font-size:1.7rem;line-height:1.15;transform:rotate(-3deg);box-shadow:inset 10px 0 0 #00000030,0 10px 24px #552a0b44}
+.cover::before,.letter::before{content:"";position:absolute;top:-13px;left:50%;width:90px;height:26px;background:var(--tape);transform:translateX(-50%) rotate(3deg)}
+.info h1{font-family:var(--display);font-weight:400;font-size:clamp(2.4rem,7vw,4rem);line-height:1}
+.by{font-size:1.25rem;margin:10px 0 14px}
+.stars{color:#b97410;font-size:1.4rem;letter-spacing:3px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 26px}
+.tags span{background:var(--ink);color:var(--kraft);padding:2px 12px;border-radius:3px}
+.letter{position:relative;background:var(--paper);padding:24px;max-width:52ch;transform:rotate(.8deg);box-shadow:0 6px 16px #552a0b26}
+.letter::before{left:28px;transform:rotate(-5deg)}
+.amz{display:inline-block;margin-top:30px;background:var(--red);color:var(--paper);padding:12px 26px;border-radius:6px;text-decoration:none;box-shadow:3px 3px 0 var(--ink)}
+
+dialog{margin:auto;border:0;background:var(--paper);color:var(--ink);width:min(440px,92vw);padding:28px;box-shadow:0 20px 60px #000a;transform:rotate(-1deg)}
+dialog::backdrop{background:#000a}
+dialog h3{font-family:var(--display);font-weight:400;font-size:2rem;line-height:1.1;padding-right:28px}
+dialog .x{position:absolute;top:12px;right:14px;background:none;border:0;font-size:1.5rem;color:var(--ink)}
+.pick{font-family:var(--book);font-size:1.5rem;min-height:4.2rem;margin:16px 0}
+.spinbtn{background:var(--gold);color:var(--ink);border:0;border-radius:6px;padding:10px 26px;font-weight:700;margin-right:8px}
+dialog .amz{margin-top:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <nav class="bar" aria-label="Sort books">
+    <a href="index.html">Home</a>
+    <button data-sort="latest" aria-pressed="true">Latest read</button>
+    <button data-sort="alpha" aria-pressed="false">Alphabetical</button>
+    <button data-sort="genre" aria-pressed="false">Genre</button>
+    <button data-sort="rating" aria-pressed="false">Rating</button>
+    <button class="spin" id="openSpin">What should I read next?</button>
+  </nav>
+</header>
+
+<p id="count" aria-live="polite"></p>
+<main id="main" aria-live="polite"></main>
+
+<footer class="bottom">
+  <div class="row"><b>Genre</b><div class="chips" id="genreChips"></div></div>
+  <div class="row"><b>Rating</b><div class="chips" id="starChips"></div></div>
+</footer>
+
+<section id="detail" aria-label="Book details">
+  <a class="back" href="#/">&larr; Back to the shelf</a>
+  <article class="sheet">
+    <div class="cover" id="dCover"></div>
+    <div class="info">
+      <h1 id="dTitle"></h1>
+      <p class="by" id="dBy"></p>
+      <div class="stars" id="dStars"></div>
+      <div class="tags" id="dTags"></div>
+      <p class="letter" id="dReview"></p>
+      <a class="amz" id="dAmz" target="_blank" rel="noopener">Find it on Amazon</a>
+    </div>
+  </article>
+</section>
+
+<dialog id="spinDlg"><button class="x" aria-label="Close" onclick="spinDlg.close()">&times;</button>
+  <h3>What should I read next?</h3>
+  <div class="pick" id="pick">Spin to pick from the TBR pile.</div>
+  <button class="spinbtn" id="spinBtn">Spin</button>
+  <a class="amz" id="spinAmz" target="_blank" rel="noopener" hidden>Find it on Amazon</a>
+</dialog>
+
+<script>
+/* ============ EDIT THESE ============ */
+const CONFIG = {
+  amazonDomain: "www.amazon.com",     // e.g. www.amazon.co.uk, www.amazon.in
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSAKfGmzbs7tbwn30b981qHeMlVKwtHACvCGVLtVbaS1BmnaZZiOnz8GpYD9czc0hO1bDU6vFjhW4BD/pub?gid=0&single=true&output=csv",
+  defaultPages: 250                   // used when the Pages cell is empty
+};
+/* ==================================== */
+
+// Sample books, shown only if the Google Sheet can't be loaded
+const FALLBACK = [
+  {title:"Pride and Prejudice",author:"Jane Austen",genre:"Classic",status:"Read",rating:5,date:"2026-08-14",review:"Witty and romantic.",color:"#8c3b3b",pages:432},
+  {title:"Atomic Habits",author:"James Clear",genre:"Self-help",status:"Read",rating:4,date:"2026-06-02",review:"Practical and easy to apply.",color:"#c9893a",pages:320},
+  {title:"Circe",author:"Madeline Miller",genre:"Fantasy",status:"TBR",rating:0,date:"",review:"",color:"#6b4a7a",pages:393}
+];
+
+const $ = id => document.getElementById(id);
+let books = [], sortBy = "latest", genreSel = "", starSel = 0;
+
+function parseCSV(text){
+  const rows=[]; let row=[], cell="", q=false;
+  for (let i=0;i<text.length;i++){
+    const ch=text[i];
+    if (q){ if(ch==='"'){ if(text[i+1]==='"'){cell+='"';i++} else q=false } else cell+=ch }
+    else if (ch==='"') q=true;
+    else if (ch===',') { row.push(cell); cell="" }
+    else if (ch==='\n' || ch==='\r'){ if(ch==='\r'&&text[i+1]==='\n') i++; row.push(cell); rows.push(row); row=[]; cell="" }
+    else cell+=ch;
+  }
+  if (cell||row.length){ row.push(cell); rows.push(row) }
+  return rows.filter(r => r.some(c => c.trim()));
+}
+function normDate(d){
+  if (!d || /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const t = new Date(d);
+  return isNaN(t) ? d : `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
+}
+function fromCSV(text){
+  const [head,...rest] = parseCSV(text);
+  const idx = n => head.findIndex(h => h.trim().toLowerCase() === n);
+  const col = {title:idx("title"),author:idx("author"),genre:idx("genre"),status:idx("status"),rating:idx("rating"),date:idx("date read"),review:idx("review"),color:idx("spine color"),pages:idx("pages")};
+  return rest.map(r => {
+    const g = k => (col[k] > -1 ? (r[col[k]]||"").trim() : "");
+    return {title:g("title"),author:g("author"),genre:g("genre")||"Other",status:(g("status")||"Read"),rating:Math.min(5,Math.round(+g("rating"))||0),date:normDate(g("date")),review:g("review"),color:g("color"),pages:Math.round(+g("pages").replace(/[^\d.]/g,""))||0};
+  }).filter(b => b.title);
+}
+
+function hash(s){ let h=0; for (const c of s) h=(h*31+c.charCodeAt(0))|0; return Math.abs(h) }
+const PALETTE = ["#8c3b3b","#3b5b8c","#4a6b57","#c9893a","#6b4a7a","#2f6f73","#a55a3c","#5d6b3a"];
+const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const colorOf = b => /^#[0-9a-f]{3,8}$/i.test(b.color) ? b.color : PALETTE[hash(b.title)%PALETTE.length];
+
+// Thickness follows page count: ~100 pages = thin, ~200 = medium, ~500 = thick.
+// This is a minimum height: long titles wrap and the spine grows taller if needed.
+const thickness = p => Math.round(Math.min(170, Math.max(20, (p || CONFIG.defaultPages) * 0.22)));
+function spine(b){
+  const h = hash(b.title), t = thickness(b.pages);
+  const x = ((h >> 3) % 15) - 7;            // sideways shift, -7px to +7px
+  const r = (((h >> 6) % 7) - 3) * 0.5;     // tilt, -1.5deg to +1.5deg
+  const btn = document.createElement("button");
+  btn.className = "book" + (b.status.toLowerCase()==="tbr" ? " tbr" : "");
+  btn.style.cssText = `background:${colorOf(b)};min-height:${t}px;font-size:${Math.round(Math.min(26,Math.max(18,t*0.5)))}px;--x:${x}px;--r:${r}deg`;
+  const mk = (cls, txt) => Object.assign(document.createElement("span"), {className:cls, textContent:txt});
+  btn.append(mk("t", b.title));
+  if (b.author) btn.append(mk("a", b.author));
+  btn.setAttribute("aria-label", `${b.title} by ${b.author}`);
+  btn.onclick = () => { location.hash = "#/book/" + slug(b.title) };
+  return btn;
+}
+
+const isRead = b => b.status.toLowerCase() !== "tbr";
+const plural = n => n + (n === 1 ? " book" : " books");
+function draw(){
+  const main = $("main"); main.innerHTML = "";
+  const list = books.filter(b => (!genreSel || b.genre === genreSel) && (!starSel || (isRead(b) && b.rating === starSel)));
+
+  $("count").textContent = list.length === books.length
+    ? "Total: " + plural(books.length)
+    : "Showing " + list.length + " of " + plural(books.length);
+
+  if (!books.length){ main.innerHTML = '<p class="empty">No books yet. Add some to your sheet.</p>'; return }
+  if (!list.length){ main.innerHTML = '<p class="empty">No books match those filters.</p>'; return }
+  let groups;
+  if (sortBy === "alpha") groups = [["", list.sort((a,b)=>a.title.localeCompare(b.title))]];
+  else if (sortBy === "rating") groups = [["", list.sort((a,b)=>b.rating-a.rating || a.title.localeCompare(b.title))]];
+  else if (sortBy === "genre"){
+    const m = {}; list.forEach(b => (m[b.genre] = m[b.genre]||[]).push(b));
+    groups = Object.keys(m).sort().map(g => [g, m[g]]);
+  } else groups = [["", list.sort((a,b)=> (isRead(b)-isRead(a)) || (b.date||"").localeCompare(a.date||""))]];
+  for (const [name, items] of groups){
+    if (name){ const h = document.createElement("h2"); h.className="genre"; h.textContent=name; main.append(h) }
+    const pile = document.createElement("div"); pile.className = "pile";
+    items.forEach(b => pile.append(spine(b)));
+    main.append(pile);
+  }
+}
+
+const amazonURL = b => `https://${CONFIG.amazonDomain}/s?k=${encodeURIComponent(b.title+" "+b.author)}`;
+
+// Book page: opens at #/book/the-title, so every book has its own shareable link
+function showBook(b){
+  $("dCover").textContent = b.title;
+  $("dCover").style.background = colorOf(b);
+  $("dTitle").textContent = b.title;
+  $("dBy").textContent = "by " + b.author;
+  $("dStars").textContent = isRead(b) && b.rating ? "★".repeat(b.rating)+"☆".repeat(5-b.rating) : "";
+  $("dTags").replaceChildren(...[b.genre, b.pages ? b.pages + " pages" : "", b.date && isRead(b) ? "Read " + b.date : "", isRead(b) ? "" : "To be read"]
+    .filter(Boolean).map(t => Object.assign(document.createElement("span"), {textContent:t})));
+  $("dReview").textContent = isRead(b) ? (b.review || "No review yet.") : "On the to-be-read pile.";
+  $("dAmz").href = amazonURL(b);
+  document.title = b.title + " | Jeruk Bookshelf";
+  document.body.classList.add("reading");
+  scrollTo(0,0);
+}
+function route(){
+  const m = location.hash.match(/^#\/book\/(.+)$/);
+  const b = m && books.find(x => slug(x.title) === m[1]);
+  if (b) return showBook(b);
+  document.body.classList.remove("reading");
+  document.title = "Jeruk Bookshelf";
+}
+addEventListener("hashchange", route);
+
+let spinning = false;
+$("openSpin").onclick = () => {
+  $("pick").textContent = books.some(b=>!isRead(b)) ? "Spin to pick from the TBR pile." : "No TBR books yet. Add some with Status = TBR.";
+  $("spinAmz").hidden = true; $("spinDlg").showModal();
+};
+$("spinBtn").onclick = () => {
+  const tbr = books.filter(b => !isRead(b));
+  if (!tbr.length || spinning) return;
+  spinning = true; $("spinAmz").hidden = true;
+  let t = 0;
+  const tick = setInterval(() => {
+    $("pick").textContent = tbr[Math.floor(Math.random()*tbr.length)].title;
+    if (++t > 18){
+      clearInterval(tick); spinning = false;
+      const w = tbr[Math.floor(Math.random()*tbr.length)];
+      $("pick").textContent = w.title + " by " + w.author;
+      $("spinAmz").href = amazonURL(w); $("spinAmz").hidden = false;
+    }
+  }, 90);
+};
+
+document.querySelectorAll("[data-sort]").forEach(btn => btn.onclick = () => {
+  sortBy = btn.dataset.sort;
+  document.querySelectorAll("[data-sort]").forEach(x => x.setAttribute("aria-pressed", x===btn));
+  draw();
+});
+
+// Genre and star buttons: click to turn on, click again to turn off
+function buildChips(){
+  const make = (box, items, get, set) => items.forEach(([label, val]) => {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.setAttribute("aria-pressed", "false");
+    btn.onclick = () => {
+      set(get() === val ? "" : val);
+      box.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === btn && get() === val));
+      draw();
+    };
+    box.append(btn);
+  });
+  const genres = [...new Set(books.map(b => b.genre))].sort();
+  make($("genreChips"), genres.map(g => [g, g]), () => genreSel, v => genreSel = v);
+  make($("starChips"), [5,4,3,2,1].map(n => [n + " ★", n]), () => starSel, v => starSel = v || 0);
+}
+
+const load = url => fetch(url, {cache:"no-store"}).then(r => { if(!r.ok) throw 0; return r.text() }).then(fromCSV);
+(CONFIG.sheetCsvUrl ? load(CONFIG.sheetCsvUrl) : Promise.reject())
+  .catch(() => FALLBACK)
+  .then(b => { books = b; buildChips(); draw(); route() });
+</script>
+</body>
+</html>
